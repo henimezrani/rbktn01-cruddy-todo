@@ -4,28 +4,48 @@ const _ = require('underscore');
 const counter = require('./counter');
 
 var items = {};
+      //var filePath = path.join(exports.dataDir, file)
+      //var filePath = path.join(exports.dataDir, `${id}.txt`)
+
+fs.readdir(`${path.join(__dirname, 'data')}`, (err, files) => {
+  if (err) {
+    console.log(err)
+  }else{
+    files.forEach( (file) => {
+      var filePath = path.join(exports.dataDir, file)
+      fs.readFile(filePath, (err, fileData) => { // Not doing this yet
+        var id = file.toString().toString().slice(0,file.toString().toString().length - 4); // using a built in function that does that instead
+        items[id]=fileData.toString() // not assigning the way we did it
+      });
+    });
+  }
+  // calling a callback here
+})
+
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
 exports.create = (text, callback) => {
-  var id = counter.getNextUniqueId((err, id)=>{
-    // var path = path.join(__dirname, 'testData');
-    console.log(__dirname)
-    fs.writeFile(`./test/testData/${id}.txt`,text, (err) => {
-    if (err) console.log(err);
-    items[id] = text;
-    callback(null, { id, text });
+  var id = counter.getNextUniqueId((err, id)=>{ // did not assign a var id (it's actually never used by us)
+    // using the filepath in the bottom of this file
+    var filePath = path.join(exports.dataDir, `${id}.txt`)
+    fs.writeFile(filePath,text, (err) => {
+      if (err){
+        console.log(err);
+      } else {
+
+        items[id] = text; // line took off
+        callback(null, { id, text });
+      }
     })
   });
 
 };
 
 exports.readAll = (callback) => {
-  // var result = []
   var data = _.map(items, (text, id) => {
     return { id, text };
   });
-  console.log(data)
   callback(null, data);
 };
 
@@ -39,12 +59,19 @@ exports.readOne = (id, callback) => {
 };
 
 exports.update = (id, text, callback) => {
+
+
+
   var item = items[id];
   if (!item) {
     callback(new Error(`No item with id: ${id}`));
   } else {
-    items[id] = text;
-    callback(null, { id, text });
+    var filePath = path.join(exports.dataDir, `${id}.txt`)
+    fs.writeFile(filePath,text, (err) => {
+      if (err) console.log(err);
+      items[id] = text;
+      callback(null, { id, text });
+    })
   }
 };
 
@@ -55,7 +82,11 @@ exports.delete = (id, callback) => {
     // report an error if item not found
     callback(new Error(`No item with id: ${id}`));
   } else {
-    callback();
+    var filePath = path.join(exports.dataDir, `${id}.txt`)
+    fs.unlink(filePath, (err) => {
+      callback(err);
+    })
+
   }
 };
 
